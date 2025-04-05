@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>已保存的视频列表</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        .video-list {
+            margin-top: 20px;
+        }
+        .video-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .video-item:hover {
+            background-color: #f0f0f0;
+        }
+        .video-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .video-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .action-btn {
+            padding: 8px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            color: white;
+        }
+        .view-btn {
+            background-color: #2196F3;
+        }
+        .download-btn {
+            background-color: #4CAF50;
+        }
+        .back-link {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+            color: #2196F3;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .empty-message {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>已保存的视频列表</h1>
+        
+        <h2>原始视频</h2>
+        <div class="video-list">
+            {% if original_videos %}
+                {% for video in original_videos %}
+                    <div class="video-item">
+                        <div class="video-name">{{ video.filename }}</div>
+                        <div class="video-actions">
+                            <a href="{{ video.url }}" class="action-btn view-btn" target="_blank">查看</a>
+                            <a href="{{ video.url }}" class="action-btn download-btn" download>下载</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-message">暂无保存的原始视频</div>
+            {% endif %}
+        </div>
+        
+        <h2>分析结果视频</h2>
+        <div class="video-list">
+            {% if analyzed_videos %}
+                {% for video in analyzed_videos %}
+                    <div class="video-item">
+                        <div class="video-name">{{ video.filename }}</div>
+                        <div class="video-actions">
+                            <a href="{{ video.url }}" class="action-btn view-btn" target="_blank">查看</a>
+                            <a href="{{ video.url }}" class="action-btn download-btn" download>下载</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-message">暂无保存的分析结果视频</div>
+            {% endif %}
+        </div>
+        
+        <a href="/" class="back-link">返回主页</a>
+    </div>
+</body>
+</html>
