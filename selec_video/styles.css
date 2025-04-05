@@ -1,0 +1,80 @@
+body {
+    font-family: 'Microsoft YaHei', sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+.container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+}
+.file-input-container {
+    margin-bottom: 20px;
+    text-align: center;
+}
+.file-input {
+    display: none;
+}
+.file-input-label {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-block;
+    transition: background-color 0.3s;
+}
+.file-input-label:hover {
+    background-color: #45a049;
+}
+.selected-file {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+}
+.video-container {
+    margin-top: 20px;
+    text-align: center;
+}
+video {
+    max-width: 100%;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.controls {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+button {
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+button:hover {
+    background-color: #0b7dda;
+}
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+.video-info {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    text-align: left;
+}
