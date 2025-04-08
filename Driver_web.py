@@ -7,7 +7,7 @@ import os
 def analyze_video(video_path, output_path):
     """分析视频并保存结果"""
     # 输入参数
-    model = cv2.imread(r"E:\xuexi\shejian\Target-Score-Detector_debugged-main\res\target.jpg")
+    model = cv2.imread(r"E:\xuexi\shejian\Target-Score-Detector_debugged-main0\Target-Score-Detector_debugged-main0\res\target.jpg")
     bullseye_point = (325, 309)
     inner_diameter_px = 50
     inner_diameter_inch = 1.5

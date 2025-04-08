@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>查看视频 - {{ filename }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .video-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .back-link {
+            margin-top: 20px;
+            display: block;
+            text-align: center;
+        }
+        .video-title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>射箭视频分析系统 - 查看视频</h1>
+        
+        <div class="video-container">
+            <h2 class="video-title">{{ filename }}</h2>
+            <video controls autoplay width="100%">
+                <source src="{{ video_url }}" type="video/mp4">
+                您的浏览器不支持 HTML5 视频。
+            </video>
+            
+            <a href="{{ url_for('serve_saved_video', filename=filename) }}" download="{{ filename }}" class="download-btn" style="display: block; text-align: center; margin-top: 20px;">下载视频</a>
+            
+            <a href="{{ url_for('list_saved_videos') }}" class="back-link">返回视频列表</a>
+            <a href="{{ url_for('index') }}" class="back-link">返回首页</a>
+        </div>
+    </div>
+</body>
+</html>

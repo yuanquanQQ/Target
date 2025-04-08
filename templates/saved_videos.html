@@ -3,119 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>已保存的视频列表</title>
+    <title>已保存的视频</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        body {
-            font-family: 'Microsoft YaHei', sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2 {
-            color: #333;
-            text-align: center;
-        }
         .video-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
             margin-top: 20px;
         }
-        .video-item {
+        .video-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
             padding: 15px;
-            margin-bottom: 10px;
+            width: calc(33.333% - 20px);
+            min-width: 250px;
             background-color: #f9f9f9;
-            border-radius: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
-        .video-item:hover {
-            background-color: #f0f0f0;
-        }
-        .video-name {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .video-card h3 {
+            margin-top: 0;
+            font-size: 16px;
+            word-break: break-all;
         }
         .video-actions {
             display: flex;
-            gap: 10px;
+            justify-content: space-between;
+            margin-top: 15px;
         }
-        .action-btn {
-            padding: 8px 15px;
+        .video-actions a {
+            padding: 8px 12px;
             border-radius: 4px;
             text-decoration: none;
             color: white;
+            font-size: 14px;
         }
-        .view-btn {
+        .download-link {
             background-color: #2196F3;
         }
-        .download-btn {
+        .view-link {
             background-color: #4CAF50;
         }
         .back-link {
             display: block;
             margin-top: 20px;
             text-align: center;
-            color: #2196F3;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        .empty-message {
-            text-align: center;
-            color: #666;
-            font-style: italic;
-            padding: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>已保存的视频列表</h1>
+        <h1>已保存的视频</h1>
         
         <h2>原始视频</h2>
         <div class="video-list">
-            {% if original_videos %}
-                {% for video in original_videos %}
-                    <div class="video-item">
-                        <div class="video-name">{{ video.filename }}</div>
-                        <div class="video-actions">
-                            <a href="{{ video.url }}" class="action-btn view-btn" target="_blank">查看</a>
-                            <a href="{{ video.url }}" class="action-btn download-btn" download>下载</a>
-                        </div>
-                    </div>
-                {% endfor %}
+            {% for video in original_videos %}
+            <div class="video-card">
+                <h3>{{ video.filename }}</h3>
+                <div class="video-actions">
+                    <a href="{{ video.url }}" download="{{ video.filename }}" class="download-link">下载</a>
+                    <a href="{{ video.view_url }}" class="view-link">查看</a>
+                </div>
+            </div>
             {% else %}
-                <div class="empty-message">暂无保存的原始视频</div>
-            {% endif %}
+            <p>没有保存的原始视频</p>
+            {% endfor %}
         </div>
         
-        <h2>分析结果视频</h2>
+        <h2>分析后的视频</h2>
         <div class="video-list">
-            {% if analyzed_videos %}
-                {% for video in analyzed_videos %}
-                    <div class="video-item">
-                        <div class="video-name">{{ video.filename }}</div>
-                        <div class="video-actions">
-                            <a href="{{ video.url }}" class="action-btn view-btn" target="_blank">查看</a>
-                            <a href="{{ video.url }}" class="action-btn download-btn" download>下载</a>
-                        </div>
-                    </div>
-                {% endfor %}
+            {% for video in analyzed_videos %}
+            <div class="video-card">
+                <h3>{{ video.filename }}</h3>
+                <div class="video-actions">
+                    <a href="{{ video.url }}" download="{{ video.filename }}" class="download-link">下载</a>
+                    <a href="{{ video.view_url }}" class="view-link">查看</a>
+                </div>
+            </div>
             {% else %}
-                <div class="empty-message">暂无保存的分析结果视频</div>
-            {% endif %}
+            <p>没有保存的分析视频</p>
+            {% endfor %}
         </div>
         
-        <a href="/" class="back-link">返回主页</a>
+        <a href="{{ url_for('index') }}" class="back-link">返回首页</a>
     </div>
 </body>
 </html>
