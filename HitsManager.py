@@ -61,7 +61,9 @@ def create_scoreboard(hits, scale, ringsAmount, innerDiam):
                             {tuple} (
                                     {Number} x coordinates of the hit,
                                     {Number} y coordinates of the hit,
-                                    {Number} The distance of the hit from the bull'seye
+                                    {Number} The distance of the hit from the bull'seye,
+                                    {tuple} bullseye point,
+                                    {tuple} polar coordinates (r, theta)
                                     )
                             ...
                        ]
@@ -80,7 +82,8 @@ def create_scoreboard(hits, scale, ringsAmount, innerDiam):
                                         {Number} x coordinates of the hit,
                                         {Number} y coordinates of the hit
                                         ),
-                                {Number} The hit's score according to the target's data
+                                {Number} The hit's score according to the target's data,
+                                {tuple} polar coordinates (r, theta)
                             )
                     ...
                 ]
@@ -98,9 +101,11 @@ def create_scoreboard(hits, scale, ringsAmount, innerDiam):
             score = 0
         elif score > 10:
             score = 10
+            
+        # 获取极坐标
+        polar_coords = hit[4]
         
-        hit_obj = Hit(int(hit[0]), int(hit[1]), score, hit[3])
-        scoreboard.append(hit_obj)
+        scoreboard.append(((hit[0], hit[1]), score, polar_coords))
 
     return scoreboard
 

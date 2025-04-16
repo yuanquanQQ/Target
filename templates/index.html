@@ -3,324 +3,652 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>射箭视频分析系统</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>射箭视频分析</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card-title {
+            font-weight: bold;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        #alerts-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: 300px;
+        }
+        .btn-file {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-file input[type=file] {
+            position: absolute;
+            top: 0;
+            right: 0;
+            min-width: 100%;
+            min-height: 100%;
+            font-size: 100px;
+            text-align: right;
+            filter: alpha(opacity=0);
+            opacity: 0;
+            outline: none;
+            background: white;
+            cursor: inherit;
+            display: block;
+        }
+        .video-btn {
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: left;
+            background-color: #333;
+            color: white;
+        }
+        .video-btn:hover {
+            background-color: #555;
+            color: white;
+        }
+        .mode-btn {
+            margin-right: 10px;
+            margin-bottom: 20px;
+        }
+        .mode-btn.active {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>射箭视频分析系统</h1>
-        
-        <div class="upload-container">
-            <label for="videoInput" class="file-input-label">选择视频文件</label>
-            <input type="file" id="videoInput" class="file-input" accept="video/*">
-            <div id="selectedFile" class="selected-file">未选择文件</div>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <a class="navbar-brand" href="#">射箭视频分析</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">首页</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/saved_videos">已保存视频</a>
+                </li>
+                <!-- 可以添加更多导航链接 -->
+            </ul>
         </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="text-center mb-4">射箭视频分析</h1>
         
-        <div class="main-content">
-            <div class="video-list">
-                <div class="video-item" id="video1">
-                    <h3>视频一</h3>
-                </div>
-                <div class="video-item" id="video2">
-                    <h3>视频二</h3>
-                </div>
-                <div class="video-item" id="video3">
-                    <h3>视频三</h3>
+        <hr>
+        
+        <div id="alerts-container"></div>
+        
+        <!-- 标签页选择按钮 -->
+        <ul class="nav nav-tabs mb-3" id="modeTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="single-tab" data-toggle="tab" data-target="#single-mode" type="button" role="tab" aria-controls="single-mode" aria-selected="true">单视频分析</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="multi-tab" data-toggle="tab" data-target="#multi-mode" type="button" role="tab" aria-controls="multi-mode" aria-selected="false">多视频合并</button>
+            </li>
+        </ul>
+        
+        <!-- 标签页内容 -->
+        <div class="tab-content" id="modeTabContent">
+            <!-- 单视频分析模式 -->
+            <div class="tab-pane fade show active" id="single-mode" role="tabpanel" aria-labelledby="single-tab">
+                <!-- 单视频分析的现有HTML结构 -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <!-- 左侧上传和控制区域 -->
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">选择视频</h5>
+                                <div id="file-selection-area">
+                                    <div class="form-group">
+                                        <label for="video-upload" class="btn btn-primary btn-block btn-file">
+                                            选择视频文件
+                                            <input type="file" id="video-upload" accept="video/*">
+                                        </label>
+                                        <div id="selected-file-name" class="mt-2 text-center"></div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="target-fps">目标帧率 (FPS):</label>
+                                        <input type="number" id="target-fps" class="form-control" value="30" min="1" max="60">
+                                        <small class="form-text text-muted">选择视频压缩的目标帧率，默认为30fps。较低的帧率可以减小文件大小，但可能影响分析精度。留空则不压缩。</small>
+                                    </div>
+                                    
+                                    <button id="upload-analyze-btn" class="btn btn-primary btn-block mt-3" disabled>上传并分析</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <!-- 右侧预览和结果区域 -->
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">原始视频</h5>
+                                        <video id="original-video" controls style="width: 100%;">
+                                            <source src="" type="video/mp4">
+                                            您的浏览器不支持视频标签。
+                                        </video>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">分析后视频</h5>
+                                        <video id="analyzed-video" controls style="width: 100%;">
+                                            <source src="" type="video/mp4">
+                                            您的浏览器不支持视频标签。
+                                        </video>
+                                        <div class="mt-3 text-right">
+                                            <button id="download-csv-btn" class="btn btn-success" style="display: none;">下载CSV文件</button>
+                                            <button id="download-analysis-btn" class="btn btn-primary ml-2" style="display: none;">下载分析结果视频</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <div class="video-display">
-                <div class="selected-video">
-                    <h3>选中的视频</h3>
-                    <video id="originalVideo" controls>
-                        您的浏览器不支持 HTML5 视频。
-                    </video>
-                    <div id="videoInfo" class="video-info">
-                        <p>视频信息将在选择文件后显示</p>
+            <!-- 多视频合并模式 -->
+            <div class="tab-pane fade" id="multi-mode" role="tabpanel" aria-labelledby="multi-tab">
+                <div class="main-video-section">
+                    <div class="video-controls-sidebar">
+                        <button class="btn" id="uploadBtn1">视频1</button>
+                        <button class="btn" id="uploadBtn2">视频2</button>
+                        <button class="btn" id="uploadBtn3">视频3</button>
+                        <button class="btn" id="uploadBtn4">视频4</button>
+                        <button class="btn" id="playAllBtn">播放</button>
+                        <button class="btn" id="uploadAndMergeBtn">上传并合并</button>
+                    </div>
+                    <div id="multiVideoGrid">
+                        <div class="video-container">
+                            <video id="video1" preload="metadata"></video>
+                        </div>
+                        <div class="video-container">
+                            <video id="video2" preload="metadata"></video>
+                        </div>
+                        <div class="video-container">
+                            <video id="video3" preload="metadata"></video>
+                        </div>
+                        <div class="video-container">
+                            <video id="video4" preload="metadata"></video>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="analyzed-video" id="resultVideoContainer" style="display: none;">
-                    <h3>分析后的视频</h3>
-                    <video id="resultVideo" controls>
-                        您的浏览器不支持 HTML5 视频。
-                    </video>
+
+                <div class="shared-video-controls">
+                    <input type="range" class="progress-slider" id="progressSlider" min="0" max="100" value="0">
+                    <div class="control-buttons">
+                        <span id="timeDisplay">00:00 / 00:00</span>
+                    </div>
+                </div>
+
+                <!-- 隐藏的文件输入框 -->
+                <input type="file" id="fileInput1" style="display: none" accept="video/*">
+                <input type="file" id="fileInput2" style="display: none" accept="video/*">
+                <input type="file" id="fileInput3" style="display: none" accept="video/*">
+                <input type="file" id="fileInput4" style="display: none" accept="video/*">
+
+                <div id="multiMessageBox"></div>
+
+                <div id="multiVideoResult" style="display: none;">
+                    <h2>合并结果</h2>
+                    <div class="video-container">
+                        <video id="combinedVideo" controls>
+                            <source src="" type="video/mp4">
+                            您的浏览器不支持视频标签。
+                        </video>
+                    </div>
+                    <div class="controls">
+                        <button class="btn" onclick="downloadCombinedVideo()">下载合并视频</button>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <div class="controls">
-            <button id="analyzeBtn" class="analyze-btn" disabled>分析视频</button>
-        </div>
-        
-        <div id="loading" class="loading">
-            <div class="loading-spinner"></div>
-            <p>正在分析视频，请稍候...</p>
-        </div>
-        
-        <div id="errorMessage" class="error-message"></div>
-        
-        <div id="resultContainer" class="result-container">
-            <h2>分析完成!</h2>
-            <p id="resultMessage"></p>
-            <div class="download-buttons">
-                <a id="downloadOriginal" class="download-btn" download>下载原始视频</a>
-                <a id="downloadAnalyzed" class="download-btn" download>下载分析结果</a>
-            </div>
-            <p><a id="viewAllVideos" href="/saved_videos">查看所有保存的视频</a></p>
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // 获取DOM元素
-        const videoInput = document.getElementById('videoInput');
-        const selectedFile = document.getElementById('selectedFile');
-        const originalVideo = document.getElementById('originalVideo');
-        const resultVideo = document.getElementById('resultVideo');
-        const videoInfo = document.getElementById('videoInfo');
-        const analyzeBtn = document.getElementById('analyzeBtn');
-        const loading = document.getElementById('loading');
-        const errorMessage = document.getElementById('errorMessage');
-        const resultContainer = document.getElementById('resultContainer');
-        const resultMessage = document.getElementById('resultMessage');
-        const resultVideoContainer = document.getElementById('resultVideoContainer');
-        
-        // 视频列表项
-        const videoItems = document.querySelectorAll('.video-item');
-        let selectedVideoItem = null;
-        let uploadedVideos = {};
-        
-        // 监听视频列表点击事件
-        videoItems.forEach(item => {
-            item.addEventListener('click', function() {
-                const videoId = this.id;
-                
-                // 如果该项没有上传视频，则不执行任何操作
-                if (!uploadedVideos[videoId]) {
+        // 确保文档加载完成后再执行
+        $(document).ready(function() {
+            // 模式切换 - 使用Bootstrap的Tab功能
+            // 不再需要之前的自定义JavaScript切换逻辑
+            
+            // --- 单视频分析模式相关JavaScript代码 --- 
+            let singleVideoDownloadUrl = '';
+            const videoUpload = document.getElementById('video-upload');
+            const selectedFileName = document.getElementById('selected-file-name');
+            const originalVideo = document.getElementById('original-video');
+            const analyzedVideo = document.getElementById('analyzed-video');
+            const uploadAnalyzeBtn = document.getElementById('upload-analyze-btn');
+            const downloadCsvBtn = document.getElementById('download-csv-btn');
+            const downloadAnalysisBtn = document.getElementById('download-analysis-btn');
+            const targetFpsInput = document.getElementById('target-fps');
+
+            videoUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedFileName.textContent = `已选择: ${file.name}`;
+                    const url = URL.createObjectURL(file);
+                    originalVideo.src = url;
+                    originalVideo.load();
+                    uploadAnalyzeBtn.disabled = false;
+                } else {
+                    selectedFileName.textContent = '';
+                    originalVideo.src = '';
+                    uploadAnalyzeBtn.disabled = true;
+                }
+            });
+
+            uploadAnalyzeBtn.addEventListener('click', async function() {
+                const file = videoUpload.files[0];
+                if (!file) {
+                    showMessage(document.getElementById('alerts-container'), '请先选择一个视频文件', 'warning');
                     return;
                 }
+
+                // 显示加载状态
+                uploadAnalyzeBtn.disabled = true;
+                uploadAnalyzeBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 分析中...';
+                showMessage(document.getElementById('alerts-container'), '正在上传和分析视频，请稍候...', 'info');
                 
-                // 移除之前选中项的样式
-                if (selectedVideoItem) {
-                    selectedVideoItem.classList.remove('selected');
+                const formData = new FormData();
+                formData.append('video', file);
+                const targetFps = targetFpsInput.value;
+                if (targetFps && parseInt(targetFps) > 0) {
+                    formData.append('target_fps', targetFps);
                 }
+
+                try {
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showMessage(document.getElementById('alerts-container'), data.message || '分析成功！', 'success');
+                        // 显示分析后的视频
+                        analyzedVideo.src = data.cache_output_url;
+                        analyzedVideo.load();
+                        
+                        // 设置下载按钮
+                        downloadCsvBtn.dataset.cacheId = data.cache_id;
+                        downloadCsvBtn.style.display = 'inline-block';
+                        downloadAnalysisBtn.dataset.downloadUrl = data.download_output_url;
+                        downloadAnalysisBtn.style.display = 'inline-block';
+                    } else {
+        <!-- 模式选择按钮 -->
+        <div class="text-center mb-4">
+            <button id="single-mode-btn" class="btn btn-light mode-btn active">单视频分析</button>
+            <button id="multi-mode-btn" class="btn btn-light mode-btn">多视频合并</button>
+        </div>
+        
+        <!-- 单视频分析模式 -->
+        <div id="single-mode" class="mode-container">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">选择的视频</h5>
+                            <div id="file-selection-area">
+                                <div class="form-group">
+                                    <label for="video-upload" class="btn btn-primary btn-block btn-file">
+                                        选择视频文件
+                                        <input type="file" id="video-upload" accept="video/*">
+                                    </label>
+                                    <div id="selected-file-name" class="mt-2 text-center"></div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="target-fps">目标帧率 (FPS):</label>
+                                    <input type="number" id="target-fps" class="form-control" value="30" min="1" max="60">
+                                    <small class="form-text text-muted">选择视频压缩的目标帧率，默认为30fps。较低的帧率可以减小文件大小，但可能影响分析精度。留空则不压缩。</small>
+                                </div>
+                                
+                                <button id="upload-analyze-btn" class="btn btn-primary btn-block mt-3" disabled>上传并分析</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
-                // 添加选中样式
-                this.classList.add('selected');
-                selectedVideoItem = this;
+                <div class="col-md-8">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">选择的视频</h5>
+                                    <video id="original-video" controls style="width: 100%;">
+                                        <source src="" type="video/mp4">
+                                        您的浏览器不支持视频标签。
+                                    </video>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">分析后的视频</h5>
+                                    <video id="analyzed-video" controls style="width: 100%;">
+                                        <source src="" type="video/mp4">
+                                        您的浏览器不支持视频标签。
+                                    </video>
+                                    <div class="mt-3 text-right">
+                                        <button id="download-csv-btn" class="btn btn-success" style="display: none;">下载CSV文件</button>
+                                        <button id="download-analysis-btn" class="btn btn-primary ml-2" style="display: none;">下载分析结果视频</button>
+                                    </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 多视频合并模式 -->
+        <div id="multi-mode" class="mode-container" style="display: none;">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">选择多个视频</h5>
+                            <div id="multi-file-selection-area">
+                                <button id="video1-btn" class="btn video-btn">视频1</button>
+                                <button id="video2-btn" class="btn video-btn">视频2</button>
+                                <button id="video3-btn" class="btn video-btn">视频3</button>
+                                <button id="video4-btn" class="btn video-btn">视频4</button>
+                                <button id="play-btn" class="btn video-btn">播放</button>
+                                
+                                <input type="file" id="multi-video-upload" style="display: none;" accept="video/*">
+                                
+                                <div class="mt-4">
+                                    <button id="upload-merge-btn" class="btn btn-success btn-block">上传并合并</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
-                // 显示选中的视频
-                originalVideo.src = uploadedVideos[videoId].url;
-                originalVideo.load();
-                
-                // 更新视频信息
-                videoInfo.innerHTML = uploadedVideos[videoId].info;
-                
-                // 启用分析按钮
-                analyzeBtn.disabled = false;
-                
-                // 隐藏之前的结果
-                resultVideoContainer.style.display = 'none';
-                resultContainer.style.display = 'none';
-            });
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">预览区域</h5>
+                            <video id="multi-preview-video" controls style="width: 100%; height: 500px; background-color: #000;">
+                                <source src="" type="video/mp4">
+                                您的浏览器不支持视频标签。
+                            </video>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 模式切换
+        $('#single-mode-btn').on('click', function() {
+            $(this).addClass('active');
+            $('#multi-mode-btn').removeClass('active');
+            $('#single-mode').show();
+            $('#multi-mode').hide();
         });
         
-        // 监听文件选择事件
-        videoInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            // 显示选择的文件名
-            selectedFile.textContent = `已选择: ${file.name}`;
-            
-            // 创建视频URL并设置到播放器
-            const videoURL = URL.createObjectURL(file);
-            originalVideo.src = videoURL;
-            
-            // 确保视频加载
-            originalVideo.load();
-            
-            // 找到第一个未使用的视频项
-            let targetVideoItem = null;
-            for (let item of videoItems) {
-                if (!uploadedVideos[item.id]) {
-                    targetVideoItem = item;
-                    break;
-                }
-            }
-            
-            // 如果所有项都已使用，则使用第一个
-            if (!targetVideoItem) {
-                targetVideoItem = videoItems[0];
-            }
-            
-            // 加载视频元数据后显示信息
-            originalVideo.onloadedmetadata = function() {
-                const duration = formatTime(originalVideo.duration);
-                const size = formatFileSize(file.size);
-                const type = file.type;
-                
-                const videoInfo = `
-                    <p><strong>文件名:</strong> ${file.name}</p>
-                    <p><strong>时长:</strong> ${duration}</p>
-                    <p><strong>大小:</strong> ${size}</p>
-                    <p><strong>类型:</strong> ${type}</p>
-                `;
-                
-                // 保存视频信息
-                uploadedVideos[targetVideoItem.id] = {
-                    file: file,
-                    url: videoURL,
-                    info: videoInfo
-                };
-                
-                // 更新视频项显示
-                targetVideoItem.innerHTML = `
-                    <h3>视频 ${targetVideoItem.id.replace('video', '')}</h3>
-                    <p>${file.name}</p>
-                `;
-                
-                // 选中该视频项
-                if (selectedVideoItem) {
-                    selectedVideoItem.classList.remove('selected');
-                }
-                targetVideoItem.classList.add('selected');
-                selectedVideoItem = targetVideoItem;
-                
-                // 更新视频信息显示
-                document.getElementById('videoInfo').innerHTML = videoInfo;
-                
-                // 启用分析按钮
-                analyzeBtn.disabled = false;
-                
-                // 隐藏之前的结果
-                resultVideoContainer.style.display = 'none';
-                resultContainer.style.display = 'none';
-                errorMessage.style.display = 'none';
-            };
-            
-            // 添加错误处理
-            originalVideo.onerror = function() {
-                console.error("视频加载错误:", originalVideo.error);
-                document.getElementById('videoInfo').innerHTML = `
-                    <p style="color: red;"><strong>错误:</strong> 无法加载视频，可能是格式不支持。</p>
-                    <p><strong>文件名:</strong> ${file.name}</p>
-                    <p><strong>大小:</strong> ${formatFileSize(file.size)}</p>
-                    <p><strong>类型:</strong> ${file.type}</p>
-                `;
-                analyzeBtn.disabled = true;
-            };
+        $('#multi-mode-btn').on('click', function() {
+            $(this).addClass('active');
+            $('#single-mode-btn').removeClass('active');
+            $('#single-mode').hide();
+            $('#multi-mode').show();
         });
         
-        // 分析按钮事件
-        analyzeBtn.addEventListener('click', function() {
-            // 检查是否选择了视频
-            if (!selectedVideoItem || !uploadedVideos[selectedVideoItem.id]) {
-                showError('请先选择视频');
+        // 单视频模式 - 文件选择变化事件
+        $('#video-upload').on('change', function() {
+            const file = this.files[0];
+            if (file) {
+                $('#selected-file-name').text(file.name);
+                $('#upload-analyze-btn').prop('disabled', false);
+                
+                // 预览选择的视频
+                const url = URL.createObjectURL(file);
+                $('#original-video source').attr('src', url);
+                $('#original-video')[0].load();
+            }
+        });
+        
+        // 单视频模式 - 上传并分析按钮点击事件
+        $('#upload-analyze-btn').on('click', function() {
+            const file = $('#video-upload')[0].files[0];
+            if (!file) {
+                showAlert('warning', '请先选择视频文件');
                 return;
             }
             
-            const file = uploadedVideos[selectedVideoItem.id].file;
-            
-            // 显示加载动画
-            loading.style.display = 'block';
-            analyzeBtn.disabled = true;
-            errorMessage.style.display = 'none';
+            // 显示加载状态
+            $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 分析中...');
             
             // 创建FormData对象
             const formData = new FormData();
             formData.append('video', file);
             
-            // 发送请求到服务器
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(data => {
-                        throw new Error(data.error || '服务器错误');
-                    });
+            // 添加目标帧率（如果有）
+            const targetFps = $('#target-fps').val();
+            if (targetFps) {
+                formData.append('target_fps', targetFps);
+            }
+            
+            // 发送上传请求
+            $.ajax({
+                url: '/upload',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    handleUploadSuccess(response);
+                },
+                error: function(xhr) {
+                    let errorMsg = '上传或分析过程中出错';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMsg = xhr.responseJSON.error;
+                    }
+                    showAlert('danger', errorMsg);
+                    $('#upload-analyze-btn').prop('disabled', false).text('上传并分析');
                 }
-                return response.json();
-            })
-            .then(data => {
-                // 隐藏加载动画
-                loading.style.display = 'none';
-                
-                // 显示结果
-                resultContainer.style.display = 'block';
-                resultMessage.textContent = `视频 "${data.original_filename}" 分析成功!`;
-                
-                // 设置下载链接
-                const downloadOriginal = document.getElementById('downloadOriginal');
-                const downloadAnalyzed = document.getElementById('downloadAnalyzed');
-                
-                downloadOriginal.href = data.download_original_url;
-                downloadOriginal.setAttribute('download', data.saved_original);
-                
-                downloadAnalyzed.href = data.download_output_url;
-                downloadAnalyzed.setAttribute('download', data.saved_output);
-                
-                // 显示结果视频
-                resultVideoContainer.style.display = 'block';
-                
-                // 使用缓存中的视频URL
-                resultVideo.src = data.cache_output_url;
-                resultVideo.load();
-                
-                // 自动播放结果视频
-                resultVideo.play().catch(e => {
-                    console.log("自动播放失败:", e);
-                    // 如果自动播放失败，显示提示
-                    showError('自动播放失败，请点击视频播放按钮手动播放');
-                });
-                
-                // 保存缓存ID到本地存储，以便后续使用
-                localStorage.setItem('lastAnalyzedVideo', data.cache_id);
-            })
-            .catch(error => {
-                // 隐藏加载动画
-                loading.style.display = 'none';
-                
-                // 显示错误信息
-                showError('分析过程中出错: ' + error.message);
-                
-                // 重新启用分析按钮
-                analyzeBtn.disabled = false;
             });
         });
         
-        // 显示错误信息
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.style.display = 'block';
-        }
-        
-        // 格式化时间为 HH:MM:SS 格式
-        function formatTime(seconds) {
-            const hrs = Math.floor(seconds / 3600);
-            const mins = Math.floor((seconds % 3600) / 60);
-            const secs = Math.floor(seconds % 60);
-            
-            let timeString = '';
-            if (hrs > 0) {
-                timeString += `${hrs}:${mins < 10 ? '0' : ''}`;
+        // 多视频模式 - 视频按钮点击事件
+        let currentVideoBtn = null;
+        $('.video-btn').on('click', function() {
+            if ($(this).attr('id') === 'play-btn') {
+                // 播放按钮逻辑
+                return;
             }
-            timeString += `${mins}:${secs < 10 ? '0' : ''}${secs}`;
             
-            return timeString;
+            currentVideoBtn = $(this);
+            $('#multi-video-upload').click();
+        });
+        
+        // 多视频模式 - 文件选择变化事件
+        $('#multi-video-upload').on('change', function() {
+            const file = this.files[0];
+            if (file && currentVideoBtn) {
+                currentVideoBtn.text(file.name);
+                currentVideoBtn.data('file', file);
+                
+                // 预览选择的视频
+                const url = URL.createObjectURL(file);
+                $('#multi-preview-video source').attr('src', url);
+                $('#multi-preview-video')[0].load();
+            }
+        });
+        
+        // 多视频模式 - 上传并合并按钮点击事件
+        $('#upload-merge-btn').on('click', function() {
+            // 检查是否至少选择了一个视频
+            let hasFiles = false;
+            const videoButtons = ['#video1-btn', '#video2-btn', '#video3-btn', '#video4-btn'];
+            for (const btnSelector of videoButtons) {
+                if ($(btnSelector).data('file')) {
+                    hasFiles = true;
+                    break;
+                }
+            }
+            
+            if (!hasFiles) {
+                showAlert('warning', '请至少选择一个视频文件');
+                return;
+            }
+            
+            // 显示加载状态
+            $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 合并中...');
+            
+            // 创建FormData对象
+            const formData = new FormData();
+            
+            // 添加所有选择的视频文件
+            for (let i = 0; i < videoButtons.length; i++) {
+                const file = $(videoButtons[i]).data('file');
+                if (file) {
+                    formData.append(`video${i+1}`, file);
+                }
+            }
+            
+            // 发送上传请求
+            $.ajax({
+                url: '/merge_videos',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    // 处理合并成功的回调
+                    showAlert('success', response.message);
+                    
+                    // 预览合并后的视频
+                    $('#multi-preview-video source').attr('src', response.merged_video_url);
+                    $('#multi-preview-video')[0].load();
+                    
+                    // 恢复按钮状态
+                    $('#upload-merge-btn').prop('disabled', false).text('上传并合并');
+                },
+                error: function(xhr) {
+                    let errorMsg = '上传或合并过程中出错';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMsg = xhr.responseJSON.error;
+                    }
+                    showAlert('danger', errorMsg);
+                    $('#upload-merge-btn').prop('disabled', false).text('上传并合并');
+                }
+            });
+        });
+        
+        // 下载CSV按钮点击事件
+        $('#download-csv-btn').on('click', function() {
+            const cacheId = $(this).data('cache-id');
+            if (!cacheId) {
+                showAlert('danger', '无法获取视频缓存ID');
+                return;
+            }
+            
+            // 显示加载状态
+            $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 生成中...');
+            
+            // 发送请求生成CSV
+            $.ajax({
+                url: '/generate_polar_csv/' + cacheId,
+                type: 'POST',
+                success: function(response) {
+                    if (response.success) {
+                        // 创建一个临时链接并点击它来下载文件
+                        const link = document.createElement('a');
+                        link.href = response.download_csv_url;
+                        link.download = response.csv_filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        showAlert('success', response.message);
+                    } else {
+                        showAlert('warning', response.message || '生成CSV失败');
+                    }
+                },
+                error: function(xhr) {
+                    let errorMsg = '生成CSV文件时出错';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMsg = xhr.responseJSON.error;
+                    }
+                    showAlert('danger', errorMsg);
+                },
+                complete: function() {
+                    // 恢复按钮状态
+                    $('#download-csv-btn').prop('disabled', false).text('下载CSV文件');
+                }
+            });
+        });
+        
+        // 下载分析结果视频按钮点击事件
+        $('#download-analysis-btn').on('click', function() {
+            const downloadUrl = $(this).data('download-url');
+            if (downloadUrl) {
+                window.location.href = downloadUrl;
+            } else {
+                showAlert('danger', '无法获取下载链接');
+            }
+        });
+        
+        // 处理上传成功的回调函数
+        function handleUploadSuccess(response) {
+            // 显示分析后的视频
+            $('#analyzed-video source').attr('src', response.cache_output_url);
+            $('#analyzed-video')[0].load();
+            
+            // 设置下载按钮
+            $('#download-csv-btn').data('cache-id', response.cache_id).show();
+            $('#download-analysis-btn').data('download-url', response.download_output_url).show();
+            
+            // 恢复上传按钮状态
+            $('#upload-analyze-btn').prop('disabled', false).text('上传并分析');
+            
+            // 显示成功消息
+            showAlert('success', response.message);
         }
         
-        // 格式化文件大小
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
+        // 显示提示信息
+        function showAlert(type, message) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            `;
             
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            $('#alerts-container').html(alertHtml);
             
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            // 5秒后自动关闭
+            setTimeout(function() {
+                $('.alert').alert('close');
+            }, 5000);
         }
     </script>
 </body>

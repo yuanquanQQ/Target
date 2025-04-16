@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频音频分析</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .header {
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        .result-container {
+            margin-top: 30px;
+            display: none;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .hits-table {
+            margin-top: 20px;
+        }
+        .parameter-form {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="text-center">视频音频分析</h1>
+            <p class="text-center text-muted">上传视频文件，分析箭射中靶的声音并生成CSV报告</p>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">上传视频</h5>
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="videoFile" class="form-label">选择视频文件</label>
+                                <input class="form-control" type="file" id="videoFile" name="video" accept="video/*" required>
+                            </div>
+                            
+                            <div class="parameter-form">
+                                <h6>分析参数（可选）</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="thresholdDb" class="form-label">声音阈值 (dB)</label>
+                                            <input type="number" class="form-control" id="thresholdDb" name="threshold_db" value="-25" step="0.1">
+                                            <div class="form-text">检测声音的阈值，默认为-25dB</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="minInterval" class="form-label">最小间隔 (秒)</label>
+                                            <input type="number" class="form-control" id="minInterval" name="min_interval_sec" value="0.5" step="0.1">
+                                            <div class="form-text">两次检测之间的最小间隔，默认为0.5秒</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">开始分析</button>
+                        </form>
+                        
+                        <div class="loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                            <p class="mt-2">正在分析视频，请稍候...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-container">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">分析结果</h5>
+                            <div id="resultMessage" class="alert alert-info"></div>
+                            
+                            <div id="hitsContainer">
+                                <h6>检测到的箭射中靶时间点</h6>
+                                <div class="table-responsive hits-table">
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>序号</th>
+                                                <th>时间点 (秒)</th>
+                                                <th>时间点 (分:秒)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="hitsTableBody">
+                                            <!-- 结果将通过JavaScript动态填充 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <a id="downloadCsvBtn" href="#" class="btn btn-success" download>
+                                    <i class="bi bi-download"></i> 下载CSV文件
+                                </a>
+                                <a id="downloadVideoBtn" href="#" class="btn btn-secondary ms-2" download>
+                                    <i class="bi bi-download"></i> 下载原始视频
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadForm = document.getElementById('uploadForm');
+            const loading = document.querySelector('.loading');
+            const resultContainer = document.querySelector('.result-container');
+            const resultMessage = document.getElementById('resultMessage');
+            const hitsContainer = document.getElementById('hitsContainer');
+            const hitsTableBody = document.getElementById('hitsTableBody');
+            const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+            const downloadVideoBtn = document.getElementById('downloadVideoBtn');
+            
+            uploadForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // 显示加载动画
+                loading.style.display = 'block';
+                resultContainer.style.display = 'none';
+                
+                // 创建FormData对象
+                const formData = new FormData(uploadForm);
+                
+                // 发送请求
+                fetch('/analyze_audio', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 隐藏加载动画
+                    loading.style.display = 'none';
+                    resultContainer.style.display = 'block';
+                    
+                    if (data.error) {
+                        resultMessage.className = 'alert alert-danger';
+                        resultMessage.textContent = data.error;
+                        hitsContainer.style.display = 'none';
+                        return;
+                    }
+                    
+                    // 显示结果消息
+                    resultMessage.className = data.success ? 'alert alert-success' : 'alert alert-warning';
+                    resultMessage.textContent = data.message;
+                    
+                    // 设置下载链接
+                    downloadCsvBtn.href = data.download_csv_url;
+                    downloadVideoBtn.href = data.download_original_url;
+                    
+                    // 如果有检测到箭射中靶的声音，显示时间点表格
+                    if (data.hits_times && data.hits_times.length > 0) {
+                        hitsContainer.style.display = 'block';
+                        hitsTableBody.innerHTML = '';
+                        
+                        data.hits_times.forEach((time, index) => {
+                            const minutes = Math.floor(time / 60);
+                            const seconds = time % 60;
+                            const timeStr = `${minutes}:${seconds.toFixed(2)}`;
+                            
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${index + 1}</td>
+                                <td>${time.toFixed(2)}</td>
+                                <td>${timeStr}</td>
+                            `;
+                            hitsTableBody.appendChild(row);
+                        });
+                    } else {
+                        hitsContainer.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    loading.style.display = 'none';
+                    resultContainer.style.display = 'block';
+                    resultMessage.className = 'alert alert-danger';
+                    resultMessage.textContent = '处理请求时出错: ' + error.message;
+                    hitsContainer.style.display = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

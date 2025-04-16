@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import math
 
 def euclidean_dist(p1, p2):
     '''
@@ -168,3 +169,35 @@ def calc_distances_from(matSize, point):
     mat_X, mat_Y = np.meshgrid(dx, dy)
     distances = ((mat_X, mat_Y), euclidean_dist((mat_X,mat_Y), (x,y)))
     return distances
+
+def calc_polar_coordinates(point, origin):
+    '''
+    计算点相对于原点的极坐标
+    
+    参数:
+        {Tuple} point - (
+                            {Number} x 坐标,
+                            {Number} y 坐标
+                        )
+        {Tuple} origin - (
+                            {Number} 原点 x 坐标,
+                            {Number} 原点 y 坐标
+                        )
+    
+    返回:
+        {Tuple} (
+                    {Number} 半径 r,
+                    {Number} 角度 θ (弧度)
+                )
+    '''
+    # 计算相对坐标
+    dx = point[0] - origin[0]
+    dy = point[1] - origin[1]
+    
+    # 计算半径
+    r = math.sqrt(dx*dx + dy*dy)
+    
+    # 计算角度（弧度）
+    theta = math.atan2(dy, dx)
+    
+    return (r, theta)

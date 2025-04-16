@@ -2,6 +2,9 @@ import ContourClassifier as cntr
 import Geometry2D as geo2D
 import numpy as np
 import cv2
+import HomographicMatcher as matcher
+import GroupingMetre as grouper
+import HitsManager as hitsMngr
 
 def subtract_background(query, subtrahend):
     '''
@@ -178,7 +181,11 @@ def find_suspect_hits(contours, vertices, scale):
         res_x = (hit[0] - vertices[0][0]) * scale[0] + vertices[0][0]
         res_y = (hit[1] - vertices[0][1]) * scale[1] + vertices[0][1]
         res_dist = geo2D.euclidean_dist(hit, bullseye)
-        res_hit = (res_x,res_y,res_dist, bullseye)
+        
+        # 计算极坐标
+        polar_coords = geo2D.calc_polar_coordinates(hit, bullseye)
+        
+        res_hit = (res_x, res_y, res_dist, bullseye, polar_coords)
         res.append(res_hit)
 
     return res
