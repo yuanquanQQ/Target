@@ -26,16 +26,7 @@ class VideoAnalyzer:
         self.inner_diam = diamPx
         self.model = model
         self.frame_h, self.frame_w, _ = frameSize
-        
-        # 使用新版本的 SIFT API
-        try:
-            self.sift = cv2.SIFT_create()
-        except AttributeError:
-            # 如果新版本API不可用，尝试旧版本
-            try:
-                self.sift = cv2.xfeatures2d.SIFT_create()
-            except AttributeError:
-                raise RuntimeError("无法创建SIFT对象，请确保安装了OpenCV-contrib")
+        self.sift = cv2.xfeatures2d.SIFT_create()
 
         # calculate anchor points and model features
         self.anchor_points, self.pad_model = geo2D.zero_pad_as(model, frameSize)
