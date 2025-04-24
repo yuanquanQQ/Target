@@ -42,17 +42,11 @@ def select_cameras_by_input():
         return None
 
 def capture_from_selected_cameras(camera_indices):
-    # 创建保存文件的基础目录
-    base_save_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "saved_videos")
-    if not os.path.exists(base_save_dir):
-        os.makedirs(base_save_dir)
-        print(f"创建基础保存目录: {base_save_dir}")
-    
-    # 创建当前拍摄会话的子目录（使用当前时间命名）
-    session_timestamp = time.strftime("%Y%m%d_%H%M%S")
-    save_dir = os.path.join(base_save_dir, session_timestamp)
-    os.makedirs(save_dir)
-    print(f"创建本次拍摄会话目录: {save_dir}")
+    # 创建保存文件的目录
+    save_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "saved_videos")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+        print(f"创建保存目录: {save_dir}")
     
     # 初始化摄像头
     caps = []
@@ -109,9 +103,9 @@ def capture_from_selected_cameras(camera_indices):
             
             # 按下's'键保存图像
             if key == ord('s'):
+                timestamp = time.strftime("%Y%m%d_%H%M%S")
                 for idx, frame in frames.items():
-                    # 使用新的命名规则：Image1, Image2, ...
-                    img_path = os.path.join(save_dir, f"Image{idx}.jpg")
+                    img_path = os.path.join(save_dir, f"camera{idx}_{timestamp}.jpg")
                     cv2.imwrite(img_path, frame)
                     print(f"图像已保存: {img_path}")
             
@@ -119,12 +113,12 @@ def capture_from_selected_cameras(camera_indices):
             elif key == ord('r'):
                 if not recording:
                     # 开始录制
+                    timestamp = time.strftime("%Y%m%d_%H%M%S")
                     # 使用更兼容的编码器
                     fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # 改为MJPG编码
                     for idx, frame in frames.items():
                         h, w = frame.shape[:2]
-                        # 使用新的命名规则：Video1, Video2, ...
-                        video_path = os.path.join(save_dir, f"Video{idx}.avi")
+                        video_path = os.path.join(save_dir, f"video{idx}_{timestamp}.avi")
                         video_writers[idx] = cv2.VideoWriter(video_path, fourcc, 20.0, (w, h))
                         
                         # 检查视频写入器是否成功创建
